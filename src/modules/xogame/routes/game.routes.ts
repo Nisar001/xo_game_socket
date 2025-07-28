@@ -1,11 +1,14 @@
 import { Router } from 'express';
-import { getAllGames, getGameById, deleteGameById } from '../controllers/game.controller';
+import { getAllGames, getGameById, deleteGameById, createGameRoom } from '../controllers/game.controller';
 import { jwtVerifyMiddleware } from '../../../middlewares/jwtVerify.middleware';
 
 const router = Router();
 
-// GET /api/xogame/games?page=1&limit=10
 
+// POST /api/xogame/games
+router.post('/games', createGameRoom);
+
+// GET /api/xogame/games?page=1&limit=10
 router.get('/games', jwtVerifyMiddleware, getAllGames);
 
 // GET /api/xogame/games/:id

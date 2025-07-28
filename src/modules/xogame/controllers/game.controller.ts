@@ -37,7 +37,31 @@ export const getGameById = async (req: Request, res: Response) => {
   }
 };
 
-// (Optional) Delete a game by ID
+// Create a new game room
+export const createGameRoom = async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.body;
+    if (!roomId) {
+      return res.status(400).json({ message: 'roomId is required' });
+    }
+    // Check for duplicate
+    const existing = await GameRoom.findOne({ roomId });
+    if (existing) {
+      return res.status(400).json({ message: 'Room already exists' });
+    }
+    const newRoom = await GameRoom.create({
+      roomId,
+      players: [],
+      status: 'waiting',
+      turn: 'X',
+      winner: '',
+      board: Array(9).fill('')
+    });
+    res.status(201).json(newRoom);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err });
+  }
+};
 export const deleteGameById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

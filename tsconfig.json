@@ -6,8 +6,9 @@
     "rootDir": "src",
     "outDir": "dist",
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/types.d.ts", "src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
