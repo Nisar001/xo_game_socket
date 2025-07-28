@@ -1,43 +1,41 @@
 import express from 'express';
 import http from 'http';
-import 'colors'; // For colored console output
-// import mongoose from 'mongoose';
-
+import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { Server as SocketIOServer } from 'socket.io';
-
 import appRoutes from './app.routes';
+import { authenticateSocket } from './middlewares/jwtVerify.middleware';
+import { handleGameSocket } from './socket/game.socket';
 import { connectDB } from './config/database';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new SocketIOServer(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
-// MongoDB Connection
-connectDB();
+connectDB()
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-
-// API Routes
 app.use('/api', appRoutes);
 
 
+io.use(authenticateSocket);
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.user ? socket.user.username : 'unknown user'}`);
+  handleGameSocket(socket, io);
 
+  socket.on('disconnect', (reason) => {
+    console.log(`Socket disconnected: ${socket.user ? socket.user.username : 'unknown user'} | Reason: ${reason}`);
+    // Optionally, update user status in DB or notify others
+  });
 
+  socket.on('error', (err) => {
+    console.error(`Socket error: ${err}`);
+  });
+});
 
-
-// Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`.bgMagenta.white);
+server.listen(process.env.PORT || 5000, () => {
+  console.log(`Server listening on port ${process.env.PORT || 5000}`.bgMagenta.white);
 });

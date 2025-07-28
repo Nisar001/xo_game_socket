@@ -9,6 +9,7 @@ export interface IUser extends Document {
   bio?: string;
   phone?: string;
   status?: 'online' | 'offline' | 'away' | 'busy';
+  socketId?: string;
   lastSeen?: Date;
   isVerified?: boolean;
   createdAt: Date;
@@ -27,6 +28,7 @@ const UserSchema: Schema = new Schema<IUser>(
     bio: { type: String, maxlength: 200 },
     phone: { type: String },
     status: { type: String, enum: ['online', 'offline', 'away', 'busy'], default: 'offline' },
+    socketId: { type: String },
     lastSeen: { type: Date },
     isVerified: { type: Boolean, default: false },
     resetPasswordToken: { type: String },
