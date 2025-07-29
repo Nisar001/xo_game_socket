@@ -20,7 +20,7 @@
     "build": "tsc",
     "serve": "npm run build && npm start",
     "watch": "nodemon",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -34,13 +34,26 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@types/babel__core": "^7.20.5",
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__template": "^7.4.4",
+    "@types/babel__traverse": "^7.20.7",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookiejar": "^2.1.5",
     "@types/express": "^5.0.3",
+    "@types/istanbul-reports": "^3.0.4",
+    "@types/jest": "^30.0.0",
     "@types/joi": "^17.2.2",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/methods": "^1.1.4",
     "@types/node": "^24.1.0",
     "@types/socket.io": "^3.0.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
     "nodemon": "^3.1.10",
+    "socket.io-client": "^4.8.1",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

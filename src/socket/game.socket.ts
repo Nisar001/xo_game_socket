@@ -68,53 +68,90 @@ export const handleGameSocket = (socket: Socket, io: Server) => {
     }
   });
 
-  socket.on('join-room', async ({ roomId }) => {
+socket.on('join-room', ({ roomId }, callback) => {
+  (async () => {
     const room = await GameRoom.findOne({ roomId });
-    if (!room) return socket.emit('error', 'Room not found');
-    if (room.players.length >= 2) return socket.emit('error', 'Room full');
-    if (!socket.user) return socket.emit('error', 'Unauthorized');
-    const isAlreadyJoined = room.players.some(p => p && p.userId && p.userId.toString() === socket.user!._id.toString());
+    if (!room) { callback && callback({ error: 'Room not found' }); return; }
+    if (!socket.user) { callback && callback({ error: 'Unauthorized' }); return; }
+    let updatedRoom = room;
+    const isAlreadyJoined = room.players.some(
+      p => p && p.userId && p.userId.toString() === socket.user!._id.toString()
+    );
     if (!isAlreadyJoined) {
-      room.players.push({ userId: socket.user._id, symbol: 'O' });
-      room.status = 'playing';
-      await room.save();
+      // Debug log: show number of players before atomic update
+      console.log('join-room: before atomic update, players.length =', room.players.length);
+      // Atomically add player only if room is not full
+      const updated = await GameRoom.findOneAndUpdate(
+        { roomId, 'players.1': { $exists: false } },
+        { $push: { players: { userId: socket.user._id, symbol: 'O' } }, $set: { status: 'playing' } },
+        { new: true }
+      );
+      if (!updated) { console.log('join-room: atomic update failed, room full'); callback && callback({ error: 'Room full' }); return; }
+      updatedRoom = updated;
+    }
+    // Always re-fetch the room to check the final state
+    const finalRoom = await GameRoom.findOne({ roomId });
+    if (!finalRoom) {
+      callback && callback({ error: 'Room not found after join attempt' });
+      return;
+    }
+    // If more than 2 players, remove extras and return error
+    if (finalRoom.players.length > 2) {
+      // Remove all players after the first two
+      finalRoom.players.splice(2); // Remove all players after the first two
+      await finalRoom.save();
+      console.log('join-room: players exceeded 2 after update, reverting and returning error');
+      callback && callback({ error: 'Room full' });
+      return;
+    }
+    // If user is not in the room, return error
+    const userInRoom = finalRoom.players.some(p => p && p.userId && p.userId.toString() === socket.user!._id.toString());
+    if (!userInRoom) {
+      callback && callback({ error: 'Room full' });
+      return;
     }
     socket.join(roomId);
-    io.to(roomId).emit('room-joined', { room, message: 'Game started. X goes first.' });
-  });
+    io.to(roomId).emit('room-joined', { room: finalRoom, message: 'Game started. X goes first.' });
+    callback && callback({ success: true });
+  })();
+});
 
   socket.on('make-move', async (data) => {
     try {
       const roomId = data?.roomId;
-      const position = data?.position;
+      let position = data?.position;
       if (!roomId || typeof roomId !== 'string' || !roomId.trim()) {
-        socket.emit('error', { message: 'roomId is required and must be a non-empty string.' });
+        socket.emit('move-error', { message: 'roomId is required and must be a non-empty string.' });
         return;
       }
+      // Accept position as string or number, coerce to number if possible
+      if (typeof position === 'string' && /^\d+$/.test(position)) {
+        position = parseInt(position, 10);
+      }
       if (typeof position !== 'number' || position < 0 || position > 8) {
-        socket.emit('error', { message: 'position is required and must be a number between 0 and 8.' });
+        socket.emit('move-error', { message: 'position is required and must be a number between 0 and 8.' });
         return;
       }
       if (!socket.user) {
-        socket.emit('error', { message: 'Unauthorized' });
+        socket.emit('move-error', { message: 'Unauthorized' });
         return;
       }
       const room = await GameRoom.findOne({ roomId });
       if (!room || room.status !== 'playing') {
-        socket.emit('error', { message: 'Game not active' });
+        socket.emit('move-error', { message: 'Game not active' });
         return;
       }
       const player = room.players.find(p => p && p.userId && p.userId.toString() === socket.user!._id.toString());
       if (!player || !player.symbol) {
-        socket.emit('error', { message: 'Not your turn' });
+        socket.emit('move-error', { message: 'Not your turn' });
         return;
       }
       if (room.turn !== player.symbol) {
-        socket.emit('error', { message: 'Not your turn' });
+        socket.emit('move-error', { message: 'Not your turn' });
         return;
       }
       if (room.board[position]) {
-        socket.emit('error', { message: 'Cell already filled' });
+        socket.emit('move-error', { message: 'Cell already filled' });
         return;
       }
       room.board[position] = player.symbol;
@@ -128,7 +165,7 @@ export const handleGameSocket = (socket: Socket, io: Server) => {
       await room.save();
       io.to(roomId).emit('board-updated', { board: room.board, turn: room.turn, winner: room.winner });
     } catch (err) {
-      socket.emit('error', { message: 'Failed to make move', error: err instanceof Error ? err.message : err });
+      socket.emit('move-error', { message: 'Failed to make move', error: err instanceof Error ? err.message : err });
     }
   });
 

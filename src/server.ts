@@ -10,9 +10,10 @@ import { connectDB } from './config/database';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
+export { server };
 
 connectDB()
 
@@ -36,6 +37,8 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(process.env.PORT || 5000, () => {
-  console.log(`Server listening on port ${process.env.PORT || 5000}`.bgMagenta.white);
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(process.env.PORT || 5000, () => {
+    console.log(`Server listening on port ${process.env.PORT || 5000}`.bgMagenta.white);
+  });
+}
