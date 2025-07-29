@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "CommonJS",
+    "strict": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["src/types.d.ts", "src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
