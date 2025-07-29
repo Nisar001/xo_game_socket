@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'development') {
+if (process.env.NODE_ENV !== 'test') {
   server.listen(process.env.PORT || 5000, () => {
     console.log(`Server listening on port ${process.env.PORT || 5000}`.bgMagenta.white);
   });

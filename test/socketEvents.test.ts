@@ -222,7 +222,7 @@ describe('Socket.IO Game Events', () => {
   it('should not allow move in non-active game', (done) => {
     createUserAndClient('user13').then(({ client }) => {
       client.emit('make-move', { roomId: 'no-such-room', position: 0 });
-      client.once('error', (err) => {
+      client.once('move-error', (err) => {
         expect(err.message).toMatch(/Game not active/);
         client.disconnect();
         done();

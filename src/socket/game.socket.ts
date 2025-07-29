@@ -119,35 +119,39 @@ socket.on('join-room', ({ roomId }, callback) => {
   socket.on('make-move', async (data) => {
     try {
       const roomId = data?.roomId;
-      const position = data?.position;
+      let position = data?. ;
       if (!roomId || typeof roomId !== 'string' || !roomId.trim()) {
-        socket.emit('error', { message: 'roomId is required and must be a non-empty string.' });
+        socket.emit('move-error', { message: 'roomId is required and must be a non-empty string.' });
         return;
       }
+      // Accept position as string or number, coerce to number if possible
+      if (typeof position === 'string' && /^\d+$/.test(position)) {
+        position = parseInt(position, 10);
+      }
       if (typeof position !== 'number' || position < 0 || position > 8) {
-        socket.emit('error', { message: 'position is required and must be a number between 0 and 8.' });
+        socket.emit('move-error', { message: 'position is required and must be a number between 0 and 8.' });
         return;
       }
       if (!socket.user) {
-        socket.emit('error', { message: 'Unauthorized' });
+        socket.emit('move-error', { message: 'Unauthorized' });
         return;
       }
       const room = await GameRoom.findOne({ roomId });
       if (!room || room.status !== 'playing') {
-        socket.emit('error', { message: 'Game not active' });
+        socket.emit('move-error', { message: 'Game not active' });
         return;
       }
       const player = room.players.find(p => p && p.userId && p.userId.toString() === socket.user!._id.toString());
       if (!player || !player.symbol) {
-        socket.emit('error', { message: 'Not your turn' });
+        socket.emit('move-error', { message: 'Not your turn' });
         return;
       }
       if (room.turn !== player.symbol) {
-        socket.emit('error', { message: 'Not your turn' });
+        socket.emit('move-error', { message: 'Not your turn' });
         return;
       }
       if (room.board[position]) {
-        socket.emit('error', { message: 'Cell already filled' });
+        socket.emit('move-error', { message: 'Cell already filled' });
         return;
       }
       room.board[position] = player.symbol;
@@ -161,7 +165,7 @@ socket.on('join-room', ({ roomId }, callback) => {
       await room.save();
       io.to(roomId).emit('board-updated', { board: room.board, turn: room.turn, winner: room.winner });
     } catch (err) {
-      socket.emit('error', { message: 'Failed to make move', error: err instanceof Error ? err.message : err });
+      socket.emit('move-error', { message: 'Failed to make move', error: err instanceof Error ? err.message : err });
     }
   });
 
