@@ -119,7 +119,7 @@ socket.on('join-room', ({ roomId }, callback) => {
   socket.on('make-move', async (data) => {
     try {
       const roomId = data?.roomId;
-      let position = data?. ;
+      let position = data?.position;
       if (!roomId || typeof roomId !== 'string' || !roomId.trim()) {
         socket.emit('move-error', { message: 'roomId is required and must be a non-empty string.' });
         return;
